@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>DetermiPass - 密码生成器</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --card-bg: #f8f9fa;
+      --border-color: #cccccc;
+      --hint-color: #666666;
+      --primary-color: #007bff;
+      --primary-hover: #0056b3;
+      --success-color: #28a745;
+      --error-bg: #ffe6e6;
+      --error-color: #dc3545;
+      --focus-ring: rgba(0, 123, 255, 0.25);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1c1c1e;
+        --text-color: #f2f2f7;
+        --card-bg: #2c2c2e;
+        --border-color: #444446;
+        --hint-color: #8e8e93;
+        --primary-color: #0a84ff;
+        --primary-hover: #0062cc;
+        --success-color: #30d158;
+        --error-bg: #421818;
+        --error-color: #ff8080;
+        --focus-ring: rgba(10, 132, 255, 0.35);
+      }
+    }
+    
+    html, body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      padding: 20px 15px 40px 15px; 
+      margin: 0 auto; 
+      max-width: 440px; 
+    }
+
+    h3 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.35em;
+      letter-spacing: -0.5px;
+    }
+    
+    .option { margin: 14px 0; }
+    
+    label {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"] { 
+      width: 100%; 
+      padding: 12px 10px; 
+      margin-top: 6px;
+      margin-bottom: 6px; 
+      font-size: 16px; 
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0 8px 0 0;
+      accent-color: var(--primary-color);
+      cursor: pointer;
+    }
+
+    .symbol-box {
+      margin-top: 8px;
+      margin-left: 26px;
+      display: block;
+    }
+
+    .hint-text {
+      font-size: 0.78em;
+      color: var(--hint-color);
+      margin-top: 2px;
+      display: block;
+      line-height: 1.35;
+    }
+    
+    button { 
+      width: 100%; 
+      padding: 13px; 
+      background-color: var(--primary-color); 
+      color: #ffffff; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 1em; 
+      font-weight: 600; 
+      cursor: pointer; 
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: opacity 0.15s ease, background-color 0.2s ease;
+    }
+
+    button:active {
+      opacity: 0.85;
+    }
+    
+    .btn-copy { 
+      background-color: var(--success-color); 
+      margin-top: 12px; 
+      display: none; 
+    }
+    
+    #res { 
+      margin-top: 18px; 
+      font-weight: 600; 
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 1.1em; 
+      word-break: break-all; 
+      color: var(--text-color); 
+      background: var(--card-bg); 
+      padding: 14px; 
+      border-radius: 8px; 
+      min-height: 52px; 
+      display: flex; 
+      align-items: center; 
+      white-space: pre-wrap;
+      border: 1px solid var(--border-color);
+    }
+    
+    .error { 
+      color: var(--error-color) !important; 
+      background: var(--error-bg) !important; 
+      font-size: 0.9em !important; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      border-color: var(--error-color) !important;
+    }
+  </style>
+</head>
+<body>
+  <h3>密码生成器</h3>
+  
+  <form id="pwdForm" onsubmit="event.preventDefault(); handleGen();">
+    <label for="text">请输入任意字符：</label>
+    <input type="text" id="text" placeholder="请输入任意字符" autocomplete="off" spellcheck="false">
+
+    <div class="option">
+      <label for="length">密码长度 (4-64)：</label>
+      <input type="text" id="length" value="16" maxlength="2" inputmode="numeric" pattern="[0-9]*" oninput="validateLenInput(this)">
+    </div>
+
+    <div class="option">
+      <label><input type="checkbox" id="num" checked> 包含数字 (0-9)</label><br>
+      <label><input type="checkbox" id="upper" checked> 包含大写字母 (A-Z)</label><br>
+      <label><input type="checkbox" id="lower" checked> 包含小写字母 (a-z)</label><br>
+      <label><input type="checkbox" id="symbol" checked onchange="toggleSymbolInput(this)"> 包含自定义特殊符号</label>
+      
+      <div id="symbolBox" class="symbol-box">
+        <input type="text" id="customSymbols" value="!@#$%^&*()_+-=[]{}" placeholder="仅允许英文半角符号" oninput="sanitizeSymbols(this)" spellcheck="false" autocomplete="off">
+        <small class="hint-text">* 仅支持英文半角标点，已自动屏蔽非 ASCII 字符。</small>
+      </div>
+    </div>
+
+    <button type="submit" id="genBtn">生成密码</button>
+  </form>
+  
+  <div id="res"></div>
+  <button id="copyBtn" class="btn-copy" onclick="copyPwd()">一键复制密码</button>
+
+  <script>
+    "use strict";
+
+    let copyResetTimer = null;
+
+    function toggleSymbolInput(checkbox) {
+      document.getElementById('symbolBox').style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    function validateLenInput(input) {
+      input.value = input.value.replace(/[^\d]/g, '');
+    }
+
+    function sanitizeSymbols(input) {
+      input.value = input.value.replace(/[^\x20-\x7E]/g, '');
+    }
+
+    function rotr32(x, n) {
+      return ((x >>> n) | (x << (32 - n))) >>> 0;
+    }
+
+    function sha256Pure(bytes) {
+      const K = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ];
+
+      const l = bytes.length;
+      const bitLen = BigInt(l) * 8n;
+      const newLen = Math.ceil((l + 9) / 64) * 64;
+      const padded = new Uint8Array(newLen);
+      padded.set(bytes);
+      padded[l] = 0x80;
+      
+      const view = new DataView(padded.buffer);
+      const highBits = Number((bitLen >> 32n) & 0xFFFFFFFFn);
+      const lowBits = Number(bitLen & 0xFFFFFFFFn);
+      
+      view.setUint32(newLen - 8, highBits, false);
+      view.setUint32(newLen - 4, lowBits, false);
+
+      let H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+      for (let i = 0; i < newLen; i += 64) {
+        const W = new Uint32Array(64);
+        for (let t = 0; t < 16; t++) W[t] = view.getUint32(i + t * 4, false);
+        for (let t = 16; t < 64; t++) {
+          const s0 = rotr32(W[t-15], 7) ^ rotr32(W[t-15], 18) ^ (W[t-15] >>> 3);
+          const s1 = rotr32(W[t-2], 17) ^ rotr32(W[t-2], 19) ^ (W[t-2] >>> 10);
+          W[t] = (W[t-16] + s0 + W[t-7] + s1) >>> 0;
+        }
+        let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+        for (let t = 0; t < 64; t++) {
+          const S1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
+          const ch = (e & f) ^ ((~e) & g);
+          const temp1 = (h + S1 + ch + K[t] + W[t]) >>> 0;
+          const S0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+
+          h = g; g = f; f = e; 
+          e = (d + temp1) >>> 0; 
+          d = c; c = b; b = a; 
+          a = (temp1 + temp2) >>> 0;
+        }
+        H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+        H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+      }
+      const res = new Uint8Array(32);
+      const resView = new DataView(res.buffer);
+      for (let i = 0; i < 8; i++) resView.setUint32(i * 4, H[i], false);
+      return res;
+    }
+
+    function stringToUtf8ByteArray(str) {
+      const out = [];
+      for (let i = 0; i < str.length; i++) {
+        let c = str.charCodeAt(i);
+        if (c < 0x80) {
+          out.push(c);
+        } else if (c < 0x800) {
+          out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+        } else if ((c & 0xfc00) === 0xd800 && i + 1 < str.length && (str.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+          c = 0x10000 + ((c & 0x03ff) << 10) + (str.charCodeAt(++i) & 0x03ff);
+          out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 0x3f), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+        } else {
+          out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+        }
+      }
+      return new Uint8Array(out);
+    }
+
+    function showError(msg) {
+      const resDiv = document.getElementById('res');
+      resDiv.className = "error";
+      resDiv.textContent = msg;
+      document.getElementById('copyBtn').style.display = "none";
+    }
+
+    function resetCopyBtn() {
+      if (copyResetTimer) {
+        clearTimeout(copyResetTimer);
+        copyResetTimer = null;
+      }
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.innerText = "一键复制密码";
+      copyBtn.style.backgroundColor = "var(--success-color)";
+    }
+
+    function mapEntropyToPool(entropyArray, pool, targetLen) {
+      const pLen = pool.length;
+      const limit = Math.floor(256 / pLen) * pLen;
+      const result = [];
+      
+      let eIndex = 0;
+      let counter = 0;
+
+      while (result.length < targetLen) {
+        if (eIndex >= entropyArray.length) {
+          counter++;
+          const salt = stringToUtf8ByteArray("DetermiPassSalt_" + counter);
+          const combined = new Uint8Array(entropyArray.length + salt.length);
+          combined.set(entropyArray);
+          combined.set(salt, entropyArray.length);
+          entropyArray = sha256Pure(combined);
+          eIndex = 0;
+        }
+
+        const val = entropyArray[eIndex++];
+        if (val < limit) {
+          result.push(pool[val % pLen]);
+        }
+      }
+      return result.join('');
+    }
+
+    function handleGen() {
+      resetCopyBtn();
+      const resDiv = document.getElementById('res');
+      resDiv.className = "";
+      
+      const rawInput = document.getElementById('text').value;
+      if (!rawInput) {
+        showError("请输入任意字符！");
+        return;
+      }
+
+      const charArray = Array.from(rawInput);
+      if (charArray.length > 10000) {
+        showError("输入字符过长（限制 10,000 字符以内）！");
+        return;
+      }
+
+      let pool = "";
+      if (document.getElementById('num').checked) pool += "0123456789";
+      if (document.getElementById('upper').checked) pool += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      if (document.getElementById('lower').checked) pool += "abcdefghijklmnopqrstuvwxyz";
+      
+      if (document.getElementById('symbol').checked) {
+        const customSyms = document.getElementById('customSymbols').value;
+        
+        if (/[^\x20-\x7E]/.test(customSyms)) {
+          showError("特殊字符框中包含非半角 ASCII 字符！");
+          return;
+        }
+
+        if (!customSyms) {
+          showError("勾选特殊字符时，自定义集合不能为空！");
+          return;
+        }
+
+        const uniqueSyms = Array.from(new Set(customSyms.split(''))).join('');
+        pool += uniqueSyms;
+      }
+
+      if (pool === "") {
+        showError("请至少勾选一种字符类型！");
+        return;
+      }
+
+      let len = parseInt(document.getElementById('length').value, 10);
+      if (isNaN(len) || len < 4) len = 4;
+      if (len > 64) len = 64;
+      document.getElementById('length').value = len;
+
+      try {
+        const msgBytes = stringToUtf8ByteArray(rawInput);
+        const primaryEntropy = sha256Pure(msgBytes);
+        const finalPassword = mapEntropyToPool(primaryEntropy, pool, len);
+
+        resDiv.textContent = finalPassword;
+        document.getElementById('copyBtn').style.display = "block";
+      } catch (err) {
+        showError("生成失败: " + (err.message || "未知计算错误"));
+      }
+    }
+
+    function copyPwd() {
+      const pwd = document.getElementById('res').textContent;
+      if (!pwd || document.getElementById('res').classList.contains("error")) return;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(pwd)
+          .then(showSuccess)
+          .catch(() => fallbackCopy(pwd));
+      } else {
+        fallbackCopy(pwd);
+      }
+    }
+
+    function fallbackCopy(text) {
+      let textarea = null;
+      try {
+        textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.top = "-9999px";
+        textarea.style.left = "-9999px";
+        textarea.setAttribute("readonly", "");
+
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+
+        const successful = document.execCommand("copy");
+        if (successful) {
+          showSuccess();
+        } else {
+          showCopyError();
+        }
+      } catch (err) {
+        showCopyError();
+      } finally {
+        if (textarea && textarea.parentNode) {
+          textarea.parentNode.removeChild(textarea);
+        }
+      }
+    }
+
+    function showSuccess() {
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.innerText = "已复制到剪贴板！";
+      copyBtn.style.backgroundColor = "#17a2b8";
+
+      if (copyResetTimer) clearTimeout(copyResetTimer);
+      copyResetTimer = setTimeout(() => {
+        resetCopyBtn();
+      }, 3000);
+    }
+
+    function showCopyError() {
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.innerText = "复制失败，请长按密码框手动复制";
+      copyBtn.style.backgroundColor = "var(--error-color)";
+    }
+
+    window.addEventListener('error', function (e) {
+      console.error('DetermiPass Internal Guarded Error:', e.error);
+    });
+  </script>
+</body>
+</html>
